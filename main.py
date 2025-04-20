@@ -6,7 +6,7 @@ st.set_page_config(page_title="تشخيص الأعطال", layout="wide")
 # ======= تصميم العنوان والواجهة =======
 st.markdown("""
     <div style="text-align:center; padding: 30px; background: linear-gradient(to right, #f8cdda, #1fc8db); border-radius: 15px;">
-        <h1 style="color:#4B0082;">System Check by AI </h1>
+        <h1 style="color:#4B0082;">[System Check by AI ]</h1>
         <h3 style="color:#2f2f2f;">اختر الصفحة التي تريد الانتقال إليها من القائمة الجانبية</h3>
     </div>
 """, unsafe_allow_html=True)
