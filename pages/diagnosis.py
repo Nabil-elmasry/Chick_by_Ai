@@ -1,4 +1,4 @@
-#fuolt work 
+# شغل ممتاز- Enhanced UI Version
 import streamlit as st
 import pdfplumber
 import pandas as pd
@@ -8,17 +8,27 @@ import shutil
 import datetime
 
 st.set_page_config(page_title="تحليل الحساسات والأكواد", layout="wide")
-st.title("AI Car Diagnosis - Final Sensor-Fault Analyzer")
+
+# ==== تصميم العنوان ====
+st.markdown("""
+    <h1 style='text-align: center; color: #2C3E50; background-color: #F9ED69; padding: 10px; border-radius: 15px;'>
+        AI Car Diagnosis - Final Sensor-Fault Analyzer
+    </h1>
+""", unsafe_allow_html=True)
 
 # ======= زر مسح الملف والذاكرة =======
-st.sidebar.subheader("تنظيف كامل للبيانات")
+st.sidebar.markdown("""
+    <div style='background-color:#f4cccc;padding:10px;border-radius:10px;'>
+        <h4 style='color:#990000;'>تنظيف كامل للبيانات</h4>
+    </div>
+""", unsafe_allow_html=True)
 
 if st.sidebar.button("احذف الملف وامسح الذاكرة"):
     try:
         if os.path.exists("Carset.csv"):
             os.remove("Carset.csv")
         if os.path.exists("backup"):
-            shutil.rmtree("backup")  # حذف مجلد النسخ الاحتياطية بالكامل
+            shutil.rmtree("backup")
         st.session_state.clear()
         st.sidebar.success("تم حذف الملفات ومسح الذاكرة. أعد تشغيل الصفحة.")
     except Exception as e:
@@ -60,8 +70,19 @@ def extract_sensor_data(text):
     return pd.DataFrame(sensors, columns=["Sensor", "Value", "Standard", "Unit"])
 
 # ======= واجهة رفع الملفات =======
-sensor_files = st.file_uploader("ارفع تقرير أو أكثر من الحساسات (PDF)", type="pdf", accept_multiple_files=True)
-code_file = st.file_uploader("ارفع تقرير الأعطال (PDF)", type="pdf")
+st.markdown("""
+    <div style='background-color:#d0f0c0;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
+        <h4 style='color:#34495e;'>ارفع تقرير أو أكثر من الحساسات (PDF)</h4>
+    </div>
+""", unsafe_allow_html=True)
+sensor_files = st.file_uploader("", type="pdf", accept_multiple_files=True)
+
+st.markdown("""
+    <div style='background-color:#fbeec1;padding:15px;border:2px dashed #f39c12;border-radius:10px;'>
+        <h4 style='color:#34495e;'>ارفع تقرير الأعطال (PDF)</h4>
+    </div>
+""", unsafe_allow_html=True)
+code_file = st.file_uploader("", type="pdf")
 
 if sensor_files and code_file:
     sensor_text = ""
@@ -126,13 +147,11 @@ if sensor_files and code_file:
             backup_dir = "backup"
             os.makedirs(backup_dir, exist_ok=True)
 
-            # نسخة احتياطية باسم التاريخ والساعة
             if os.path.exists(csv_filename):
                 now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 backup_path = os.path.join(backup_dir, f"backup_{now}.csv")
                 shutil.copyfile(csv_filename, backup_path)
 
-            # دمج البيانات الجديدة
             if os.path.exists(csv_filename):
                 existing_df = pd.read_csv(csv_filename)
                 final_df = pd.concat([existing_df, new_case_df], ignore_index=True)
