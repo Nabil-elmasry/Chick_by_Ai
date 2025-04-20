@@ -12,7 +12,7 @@ st.set_page_config(page_title="تحليل الحساسات والأكواد", la
 # ==== تصميم العنوان ====
 st.markdown("""
     <h1 style='text-align: center; color: #FFFFFF; background-color: #FF0000; padding: 10px; border-radius: 15px;'>
-        AI Car Diagnosis -    
+        AI Car Diagnosis     
     </h1>
 """, unsafe_allow_html=True)
 
@@ -71,7 +71,7 @@ def extract_sensor_data(text):
 
 # ======= واجهة رفع الملفات =======
 st.markdown("""
-    <div style='background-color:#d0f0c0;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
+    <div style='background-color:#FFFF66;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
         <h4 style='color:#34495e;'> من فضلك ارفع تقرير الحساسات (PDF)</h4>
     </div>
 """, unsafe_allow_html=True)
