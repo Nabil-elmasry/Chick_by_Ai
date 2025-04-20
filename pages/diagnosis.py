@@ -1,14 +1,28 @@
-
-pages/diagnosis.py
-
+#fuolt work 
 import streamlit as st
 import pdfplumber
 import pandas as pd
 import re
 import os
+import shutil
+import datetime
 
-st.set_page_config(page_title="AI Car Diagnosis", layout="wide")
+st.set_page_config(page_title="تحليل الحساسات والأكواد", layout="wide")
 st.title("AI Car Diagnosis - Final Sensor-Fault Analyzer")
+
+# ======= زر مسح الملف والذاكرة =======
+st.sidebar.subheader("تنظيف كامل للبيانات")
+
+if st.sidebar.button("احذف الملف وامسح الذاكرة"):
+    try:
+        if os.path.exists("Carset.csv"):
+            os.remove("Carset.csv")
+        if os.path.exists("backup"):
+            shutil.rmtree("backup")  # حذف مجلد النسخ الاحتياطية بالكامل
+        st.session_state.clear()
+        st.sidebar.success("تم حذف الملفات ومسح الذاكرة. أعد تشغيل الصفحة.")
+    except Exception as e:
+        st.sidebar.error(f"حدث خطأ أثناء الحذف: {e}")
 
 # ======= دوال استخراج البيانات =======
 def extract_text_from_pdf(uploaded_file):
@@ -46,8 +60,8 @@ def extract_sensor_data(text):
     return pd.DataFrame(sensors, columns=["Sensor", "Value", "Standard", "Unit"])
 
 # ======= واجهة رفع الملفات =======
-sensor_files = st.file_uploader("Upload One or More Sensor Reports (PDF)", type="pdf", accept_multiple_files=True)
-code_file = st.file_uploader("Upload Fault Report (PDF)", type="pdf")
+sensor_files = st.file_uploader("ارفع تقرير أو أكثر من الحساسات (PDF)", type="pdf", accept_multiple_files=True)
+code_file = st.file_uploader("ارفع تقرير الأعطال (PDF)", type="pdf")
 
 if sensor_files and code_file:
     sensor_text = ""
@@ -60,13 +74,13 @@ if sensor_files and code_file:
     dtcs = extract_dtcs(code_text)
     df_dtcs = pd.DataFrame(dtcs, columns=["Code", "Description"])
 
-    st.subheader("1. Extracted Sensor Data")
+    st.subheader("1. بيانات الحساسات المستخرجة")
     st.dataframe(df_sensors)
 
-    st.subheader("2. Extracted Fault Codes")
+    st.subheader("2. الأكواد المستخرجة")
     st.dataframe(df_dtcs)
 
-    st.subheader("3. Sensor-Fault Matching & Deviation Analysis")
+    st.subheader("3. تحليل الانحراف وربط الحساسات بالأكواد")
     matches = []
     for _, dtc_row in df_dtcs.iterrows():
         for _, sensor_row in df_sensors.iterrows():
@@ -95,12 +109,12 @@ if sensor_files and code_file:
         df_matches = pd.DataFrame(matches, columns=[
             "Code", "Fault Description", "Sensor", "Value", "Standard", "Unit", "Deviation %", "Status"
         ])
-        st.success("Sensor deviation analysis completed:")
+        st.success("تم تحليل الانحراف وربط الحساسات بالأكواد بنجاح.")
         st.dataframe(df_matches)
     else:
-        st.info("No direct match or deviation detected.")
+        st.info("لم يتم العثور على تطابق مباشر بين الحساسات والأكواد.")
 
-    # ======= زر يدوي لحفظ وتحميل البيانات =======
+    # ======= زر يدوي لحفظ البيانات =======
     st.subheader("4. حفظ البيانات يدويًا")
     if st.button("احفظ البيانات الحالية"):
         try:
@@ -109,7 +123,16 @@ if sensor_files and code_file:
             new_case_df = pd.DataFrame([sensor_dict])
 
             csv_filename = "Carset.csv"
+            backup_dir = "backup"
+            os.makedirs(backup_dir, exist_ok=True)
 
+            # نسخة احتياطية باسم التاريخ والساعة
+            if os.path.exists(csv_filename):
+                now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                backup_path = os.path.join(backup_dir, f"backup_{now}.csv")
+                shutil.copyfile(csv_filename, backup_path)
+
+            # دمج البيانات الجديدة
             if os.path.exists(csv_filename):
                 existing_df = pd.read_csv(csv_filename)
                 final_df = pd.concat([existing_df, new_case_df], ignore_index=True)
@@ -117,9 +140,8 @@ if sensor_files and code_file:
                 final_df = new_case_df
 
             final_df.to_csv(csv_filename, index=False)
-            st.success("تم حفظ البيانات في Carset.csv")
+            st.success("تم حفظ البيانات في Carset.csv وتم إنشاء نسخة احتياطية في backup")
 
-            # زر التحميل
             with open(csv_filename, "rb") as f:
                 st.download_button(
                     label="Download Carset.csv",
@@ -129,8 +151,8 @@ if sensor_files and code_file:
                 )
 
         except Exception as e:
-            st.error(f"Error saving data: {e}")
+            st.error(f"خطأ في حفظ البيانات: {e}")
 
 else:
-    st.warning("Please upload one or more sensor PDF reports and a fault code report to proceed.")
+    st.warning("يرجى رفع تقرير الحساسات وتقرير الأعطال للاستمرار.")
 
