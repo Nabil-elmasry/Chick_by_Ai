@@ -11,7 +11,7 @@ st.set_page_config(page_title="تحليل الحساسات والأكواد", la
 
 # ==== تصميم العنوان ====
 st.markdown("""
-    <h1 style='text-align: center; color: #2C3E50; background-color: #FF0000; padding: 10px; border-radius: 15px;'>
+    <h1 style='text-align: center; color: #FFFFFF; background-color: #FF0000; padding: 10px; border-radius: 15px;'>
         AI Car Diagnosis -    Sensor-Fault code
     </h1>
 """, unsafe_allow_html=True)
