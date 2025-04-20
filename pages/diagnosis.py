@@ -72,14 +72,14 @@ def extract_sensor_data(text):
 # ======= واجهة رفع الملفات =======
 st.markdown("""
     <div style='background-color:#d0f0c0;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
-        <h4 style='color:#34495e;'>ارفع تقرير أو أكثر من الحساسات (PDF)</h4>
+        <h4 style='color:#34495e;'> من فضلك ارفع تقرير الحساسات (PDF)</h4>
     </div>
 """, unsafe_allow_html=True)
 sensor_files = st.file_uploader("", type="pdf", accept_multiple_files=True)
 
 st.markdown("""
     <div style='background-color:#fbeec1;padding:15px;border:2px dashed #f39c12;border-radius:10px;'>
-        <h4 style='color:#34495e;'>ارفع تقرير الأعطال (PDF)</h4>
+        <h4 style='color:#34495e;'>من فضلك ارفع تقرير الأعطال (PDF)</h4>
     </div>
 """, unsafe_allow_html=True)
 code_file = st.file_uploader("", type="pdf")
