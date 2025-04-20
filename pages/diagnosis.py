@@ -71,7 +71,7 @@ def extract_sensor_data(text):
 
 # ======= واجهة رفع الملفات =======
 st.markdown("""
-    <div style='background-color:#FFFF66;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
+    <div style='background-color:#E6E6FA;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
         <h4 style='color:#34495e;'> من فضلك ارفع تقرير الحساسات (PDF)</h4>
     </div>
 """, unsafe_allow_html=True)
