@@ -1,4 +1,4 @@
-# شغل ممتاز- Enhanced UI Version
+see# شغل ممتاز- Enhanced UI Version
 import streamlit as st
 import pdfplumber
 import pandas as pd
@@ -172,6 +172,57 @@ if sensor_files and code_file:
         except Exception as e:
             st.error(f"خطأ في حفظ البيانات: {e}")
 
+
+
+#### 2. **كود جاهز للنسخ (أضفه في `diagnosis.py`)**:
+```python
+import streamlit as st
+import pandas as pd
+import re
+
+# ---- جزء تنظيف البيانات ----
+def clean_carset(uploaded_file):
+    # قراءة الملف
+    df = pd.read_csv(uploaded_file, encoding='latin1', on_bad_lines='skip')
+    
+    # استخراج البيانات المهمة
+    cleaned_data = []
+    for _, row in df.iterrows():
+        sensor = row.get('Sensor', '')
+        value = row.get('Value', '')
+        fault_codes = re.findall(r'P\d{4}', str(row))
+        
+        if sensor or value or fault_codes:
+            cleaned_data.append({
+                'Sensor': sensor,
+                'Value': value,
+                'Fault_Codes': ', '.join(fault_codes) if fault_codes else 'No Code'
+            })
+    
+    return pd.DataFrame(cleaned_data)
+
+# ---- واجهة Streamlit ----
+st.title("✨ تنظيف بيانات السيارات من الموبايل")
+
+# زر رفع الملف
+uploaded_file = st.file_uploader("ارفع ملف Carset.csv", type="csv")
+
+if uploaded_file:
+    # تنظيف البيانات وعرضها
+    cleaned_df = clean_carset(uploaded_file)
+    st.success("تم تنظيف البيانات بنجاح!")
+    st.dataframe(cleaned_df)
+    
+    # زر لتحميل الملف النظيف
+    st.download_button(
+        label="حفظ الملف النظيف",
+        data=cleaned_df.to_csv(index=False),
+        file_name="Cleaned_Carset.csv",
+        mime="text/csv"
+    )
+
+
 else:
     st.warning("يرجى رفع تقرير الحساسات وتقرير الأعطال للاستمرار.")
+
 
