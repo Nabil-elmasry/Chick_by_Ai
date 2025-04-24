@@ -7,6 +7,27 @@ import os
 import shutil
 import datetime
 
+
+#بداية التعديل 
+
+# ======= دوال استخراج البيانات =======
+def clean_carset(data):
+    cleaned_data = []
+    for _, row in data.iterrows():
+        fault_codes = re.findall(r'P\d{4}', str(row))
+        cleaned_data.append({
+            'Sensor': row.get('Sensor', ''),
+            'Value': row.get('Value', ''),
+            'Standard': row.get('Standard', ''),
+            'Fault_Codes': ', '.join(fault_codes) if fault_codes else 'No Code'
+        })
+    return pd.DataFrame(cleaned_data)
+```
+
+
+#جزء التعديل#
+
+
 st.set_page_config(page_title="تحليل الحساسات والأكواد", layout="wide")
 
 # ==== تصميم العنوان ====
