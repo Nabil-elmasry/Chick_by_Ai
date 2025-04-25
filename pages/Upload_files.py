@@ -1,30 +1,34 @@
 
 import streamlit as st
 import pandas as pd
+import re
 
-st.set_page_config(page_title="تحميل ملفات المشروع", layout="wide")
-st.title("تحميل ملفات CSV وTXT و Word")
+st.set_page_config(page_title="تنظيف وتحويل ملف الأكواد", layout="centered")
+st.title("تحميل وتنظيف ملف الأكواد - TXT")
 
-file = st.file_uploader("ارفع ملف (csv أو txt أو word)", type=["csv", "txt", "docx"])
+uploaded_file = st.file_uploader("ارفع ملف الأكواد (txt)", type="txt")
 
-if file:
-    file_name = file.name
-    st.write(f"**تم تحميل الملف:** {file_name}")
+if uploaded_file is not None:
+    content = uploaded_file.read().decode('utf-8')
+    
+    # استخراج البيانات باستخدام regex
+    pattern = r'"(P\d{4})","([^"]+)"'
+    matches = re.findall(pattern, content)
 
-    if file_name.endswith(".csv"):
-        df = pd.read_csv(file)
-        st.subheader("معاينة محتوى CSV:")
+    if matches:
+        df = pd.DataFrame(matches, columns=["Code", "Description"])
+        st.success(f"تم استخراج {len(df)} كود بنجاح")
         st.dataframe(df)
 
-    elif file_name.endswith(".txt"):
-        text = file.read().decode("utf-8")
-        st.subheader("محتوى ملف TXT:")
-        st.text_area("نص الملف:", value=text, height=300)
-
-    elif file_name.endswith(".docx"):
-        import docx
-        doc = docx.Document(file)
-        fullText = "\n".join([para.text for para in doc.paragraphs])
-        st.subheader("محتوى ملف Word:")
-        st.text_area("نص الملف:", value=fullText, height=300)
-
+        # حفظ الملف
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="تحميل ملف الأكواد المنظف",
+            data=csv_data,
+            file_name="Cleaned_Codes.csv",
+            mime="text/csv"
+        )
+    else:
+        st.error("لم يتم العثور على أكواد في الملف. تأكد من تنسيقه.")
+else:
+    st.info("يرجى رفع ملف .txt لبدء التنظيف.")
