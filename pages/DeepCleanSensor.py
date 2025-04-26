@@ -4,48 +4,55 @@ import pandas as pd
 import re
 
 st.set_page_config(page_title="تنظيف ملف الحساسات", layout="wide")
-st.title("تنظيف وتنظيم بيانات ملف الحساسات - Sensor Data Cleaning")
 
-# رفع ملف الحساسات
+st.title("تنظيف وتحضير ملف بيانات الحساسات للتدريب")
+
 uploaded_file = st.file_uploader("ارفع ملف الحساسات (Sensor.csv)", type=["csv"])
 
 if uploaded_file:
-    # قراءة البيانات
     df = pd.read_csv(uploaded_file)
 
     st.subheader("البيانات الأصلية")
     st.dataframe(df.head())
 
-    # تنظيف الأعمدة: إزالة الفراغات والعلامات غير المرغوبة
-    df.columns = [col.strip() for col in df.columns]
+    # ====== تنظيف البيانات ======
 
-    # تنظيف القيم داخل الجدول
+    # حذف أي صفوف ناقصة بشكل كامل
+    df_clean = df.dropna(how='all')
+
+    # حذف مسافات إضافية في الأعمدة
+    df_clean.columns = df_clean.columns.str.strip()
+
+    # تنظيف الخانات: إزالة الرموز مثل % و C و km/h و RPM و kPa و g/s
     def clean_value(val):
-        if isinstance(val, str):
-            val = val.replace(",", ".")  # استبدال الفاصلة العشرية
-            val = re.sub(r'[^\d\.-]', '', val)  # إزالة أي حروف أو رموز باستثناء الأرقام والنقطة والسالب
+        if pd.isnull(val):
+            return val
+        val = str(val)
+        val = re.sub(r'[^\d\.\-]', '', val)  # الاحتفاظ بالأرقام والعلامة السالبة والنقطة فقط
         return val
 
-    # تطبيق التنظيف
-    df_cleaned = df.applymap(clean_value)
+    for col in df_clean.columns:
+        df_clean[col] = df_clean[col].apply(clean_value)
+
+    # تحويل الأعمدة الرقمية فعلاً لأرقام (floats)
+    for col in df_clean.columns:
+        try:
+            df_clean[col] = pd.to_numeric(df_clean[col])
+        except:
+            pass  # نسيب الأعمدة اللي مش قابلة للتحويل زي ID وغيره
 
     st.subheader("البيانات بعد التنظيف")
-    st.dataframe(df_cleaned.head())
+    st.dataframe(df_clean.head())
 
-    # حفظ الملف
-    cleaned_filename = "Cleaned_Sensor.csv"
-    df_cleaned.to_csv(cleaned_filename, index=False, encoding='utf-8')
+    # ====== زر لتحميل الملف النهائي ======
+    csv = df_clean.to_csv(index=False).encode('utf-8-sig')
 
-    # زر تحميل الملف
-    with open(cleaned_filename, "rb") as f:
-        st.download_button(
-            label="تحميل ملف الحساسات المنظف (CSV)",
-            data=f,
-            file_name="Cleaned_Sensor.csv",
-            mime="text/csv"
-        )
+    st.download_button(
+        label="تحميل ملف الحساسات بعد التنظيف",
+        data=csv,
+        file_name='Cleaned_Sensor.csv',
+        mime='text/csv'
+    )
 else:
-    st.warning("من فضلك ارفع ملف الحساسات أولاً بصيغة CSV.")
+    st.warning("من فضلك ارفع ملف الحساسات أولاً.")
 
-
----
