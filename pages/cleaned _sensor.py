@@ -2,53 +2,42 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="تنظيف ملف الحساسات", layout="wide")
-st.title("AI Car Diagnosis - Sensor Data Cleaner")
+st.set_page_config(page_title="تنظيف وتحميل بيانات الحساسات", layout="wide")
+st.title("تنظيف وتحميل بيانات الحساسات - Sensor Data Cleaning")
 
 # رفع ملف الحساسات
-uploaded_file = st.file_uploader("ارفع ملف الحساسات (.csv)", type=["csv"])
+uploaded_file = st.file_uploader("ارفع ملف الحساسات (CSV)", type=["csv"])
 
 if uploaded_file is not None:
-    try:
-        # قراءة الملف
-        df = pd.read_csv(uploaded_file)
+    # قراءة البيانات
+    df = pd.read_csv(uploaded_file)
 
-        st.subheader("البيانات الأصلية")
-        st.dataframe(df)
+    st.subheader("عرض البيانات الأصلية")
+    st.dataframe(df)
 
-        # ====== تنظيف البيانات ======
-        # حذف الصفوف أو الأعمدة الفارغة
-        df_cleaned = df.dropna(how='all')  # حذف الصفوف الفارغة كليًا
-        df_cleaned = df_cleaned.dropna(axis=1, how='all')  # حذف الأعمدة الفارغة كليًا
+    # تنظيف الأعمدة (إزالة الفراغات والمسافات)
+    df.columns = df.columns.str.strip()
 
-        # إصلاح الفواصل العشرية (تحويل الفواصل إلى نقاط إن وجدت)
-        df_cleaned = df_cleaned.applymap(
-            lambda x: str(x).replace(',', '.') if isinstance(x, str) else x
-        )
+    # إزالة الصفوف الفارغة إن وجدت
+    df.dropna(how="all", inplace=True)
 
-        # محاولة تحويل الأعمدة الرقمية إلى float أو int
-        for col in df_cleaned.columns:
-            try:
-                df_cleaned[col] = pd.to_numeric(df_cleaned[col], errors='ignore')
-            except:
-                pass
+    # إزالة الأعمدة الفارغة إن وجدت
+    df.dropna(axis=1, how="all", inplace=True)
 
-        st.success("تم تنظيف وتنظيم البيانات بنجاح!")
+    # عرض البيانات بعد التنظيف
+    st.subheader("عرض البيانات بعد التنظيف")
+    st.dataframe(df)
 
-        st.subheader("البيانات بعد التنظيف")
-        st.dataframe(df_cleaned)
+    # تحويل الداتا إلى CSV وتحميلها إجباري
+    csv = df.to_csv(index=False).encode('utf-8-sig')
 
-        # ====== زر تحميل الملف ======
-        csv = df_cleaned.to_csv(index=False, encoding='utf-8-sig')
-        st.download_button(
-            label="تحميل ملف الحساسات المنظف",
-            data=csv,
-            file_name="Cleaned_Sensor.csv",
-            mime='text/csv'
-        )
+    st.download_button(
+        label="اضغط هنا لتحميل ملف الحساسات بعد التنظيف (CSV)",
+        data=csv,
+        file_name='Cleaned_Sensor.csv',
+        mime='text/csv'
+    )
 
-    except Exception as e:
-        st.error(f"حدث خطأ أثناء معالجة الملف: {e}")
 else:
-    st.info("يرجى رفع ملف الحساسات أولاً للبدء.")
+    st.info("برجاء رفع ملف الحساسات للبدء في التنظيف.")
 
