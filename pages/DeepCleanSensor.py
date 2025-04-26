@@ -1,58 +1,53 @@
 
-import streamlit as st
 import pandas as pd
 import re
 
-st.set_page_config(page_title="تنظيف ملف الحساسات", layout="wide")
+# رفع الملف عبر Streamlit
+import streamlit as st
 
-st.title("تنظيف وتحضير ملف بيانات الحساسات للتدريب")
+st.title("تنظيف ملف الحساسات وتجهيز البيانات")
 
-uploaded_file = st.file_uploader("ارفع ملف الحساسات (Sensor.csv)", type=["csv"])
+uploaded_file = st.file_uploader("ارفع ملف الحساسات (sensor.csv)", type=['csv'])
 
-if uploaded_file:
+if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 
-    st.subheader("البيانات الأصلية")
-    st.dataframe(df.head())
+    st.success("تم تحميل الملف بنجاح!")
 
-    # ====== تنظيف البيانات ======
+    # قائمة الأعمدة المستهدفة بالتنظيف
+    target_columns = df.columns
 
-    # حذف أي صفوف ناقصة بشكل كامل
-    df_clean = df.dropna(how='all')
+    # إنشاء نسخ إضافية لحفظ القيم والوحدات
+    cleaned_data = pd.DataFrame()
 
-    # حذف مسافات إضافية في الأعمدة
-    df_clean.columns = df_clean.columns.str.strip()
+    for col in target_columns:
+        cleaned_values = []
+        units = []
 
-    # تنظيف الخانات: إزالة الرموز مثل % و C و km/h و RPM و kPa و g/s
-    def clean_value(val):
-        if pd.isnull(val):
-            return val
-        val = str(val)
-        val = re.sub(r'[^\d\.\-]', '', val)  # الاحتفاظ بالأرقام والعلامة السالبة والنقطة فقط
-        return val
+        for value in df[col].astype(str):
+            # استخراج الرقم
+            number = re.findall(r"[-+]?\d*\.\d+|\d+", value.replace(',', '.'))
+            number = number[0] if number else None
 
-    for col in df_clean.columns:
-        df_clean[col] = df_clean[col].apply(clean_value)
+            # استخراج الوحدة
+            unit = re.sub(r"[-+]?\d*\.\d+|\d+|[,]|%", "", value).strip()
 
-    # تحويل الأعمدة الرقمية فعلاً لأرقام (floats)
-    for col in df_clean.columns:
-        try:
-            df_clean[col] = pd.to_numeric(df_clean[col])
-        except:
-            pass  # نسيب الأعمدة اللي مش قابلة للتحويل زي ID وغيره
+            cleaned_values.append(float(number) if number is not None else None)
+            units.append(unit if unit else None)
 
-    st.subheader("البيانات بعد التنظيف")
-    st.dataframe(df_clean.head())
+        cleaned_data[col] = cleaned_values
+        cleaned_data[col + "_unit"] = units
 
-    # ====== زر لتحميل الملف النهائي ======
-    csv = df_clean.to_csv(index=False).encode('utf-8-sig')
+    # عرض أول 5 صفوف للمعاينة
+    st.subheader("معاينة أولية للبيانات بعد التنظيف:")
+    st.dataframe(cleaned_data.head())
 
+    # حفظ الملف النهائي
+    csv = cleaned_data.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="تحميل ملف الحساسات بعد التنظيف",
+        label="تحميل الملف المنظف بصيغة CSV",
         data=csv,
-        file_name='Cleaned_Sensor.csv',
+        file_name="Cleaned_Sensor.csv",
         mime='text/csv'
     )
-else:
-    st.warning("من فضلك ارفع ملف الحساسات أولاً.")
 
