@@ -1,45 +1,56 @@
 
+import streamlit as st
 import pandas as pd
 import re
+from io import StringIO
 
-# رفع الملف عن طريق streamlit مثلا:
-import streamlit as st
+st.title("تنظيف وتنظيم بيانات الحساسات")
 
-st.title("تنظيف ملف الحساسات مع استخراج الوحدات")
-
-uploaded_file = st.file_uploader("ارفع ملف الحساسات بصيغة CSV", type=["csv"])
-
+uploaded_file = st.file_uploader("ارفع ملف sensor.csv", type=["csv"])
 if uploaded_file is not None:
-    # قراءة الملف
-    df = pd.read_csv(uploaded_file)
+    # قراءة الملف الأصلي
+    df = pd.read_csv(uploaded_file, encoding='utf-8')
 
-    # دالة لفصل القيم الرقمية عن الوحدة
-    def split_value_unit(value):
-        if pd.isna(value):
-            return value, None
-        match = re.match(r"([-+]?[0-9]*\.?[0-9]+)\s*([a-zA-Z%/]+)?", str(value))
-        if match:
-            number = match.group(1)
-            unit = match.group(2)
-            return number, unit
-        else:
-            return value, None
+    st.subheader("البيانات قبل التنظيف")
+    st.write(df.head())
 
-    # تطبيق الدالة على كل الأعمدة
-    cleaned_df = pd.DataFrame()
+    # تنظيف الأعمدة: فصل القيم عن الوحدات والنسب
+    new_columns = {}
     for col in df.columns:
-        cleaned_df[col] = df[col].apply(lambda x: split_value_unit(x)[0])
-        cleaned_df[col + "_unit"] = df[col].apply(lambda x: split_value_unit(x)[1])
+        new_value_col = col.strip()
+        unit_col = new_value_col + "_unit"
 
-    # عرض البيانات بعد التنظيف
-    st.dataframe(cleaned_df)
+        def extract_value_and_unit(val):
+            if pd.isna(val):
+                return pd.NA, pd.NA
+            match = re.match(r"([\d\-,\.E+]+)([^\d\s,\.%]+|%)?", str(val).strip())
+            if match:
+                value = match.group(1).replace(',', '.')
+                unit = match.group(2) if match.group(2) else ""
+                return value, unit
+            return val, ""
 
-    # حفظ الملف الجديد
-    csv = cleaned_df.to_csv(index=False).encode('utf-8')
+        values, units = zip(*df[new_value_col].map(extract_value_and_unit))
+        df[new_value_col] = values
+        df[unit_col] = units
+        new_columns[new_value_col] = new_value_col
+        new_columns[unit_col] = unit_col
+
+    # تحويل القيم الرقمية إلى float
+    for col in df.columns:
+        try:
+            df[col] = pd.to_numeric(df[col])
+        except:
+            continue
+
+    st.subheader("البيانات بعد التنظيف")
+    st.write(df.head())
+
+    # حفظ الملف للتنزيل
+    cleaned_csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="تحميل الملف بعد التنظيف بصيغة CSV",
-        data=csv,
-        file_name="cleaned_sensor_file.csv",
-        mime='text/csv',
+        label="تحميل الملف بعد التنظيف (CSV)",
+        data=cleaned_csv,
+        file_name="Cleaned_Sensor.csv",
+        mime="text/csv"
     )
-
