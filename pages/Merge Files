@@ -1,36 +1,46 @@
 
 import streamlit as st
 import pandas as pd
+import uuid
 
-st.set_page_config(page_title="دمج الملفات", layout="centered")
+st.set_page_config(page_title="تحضير الملفات", layout="centered")
 
-st.title("دمج ملفات Carset و Sensor Dataset")
+st.title("تحضير ملفات البيانات (إضافة عمود ID)")
 
-carset_file = st.file_uploader("ارفع ملف Carset", type=["csv"], key="carset")
-sensor_file = st.file_uploader("ارفع ملف Sensor Dataset", type=["csv"], key="sensor")
+carset_file = st.file_uploader("ارفع ملف Carset", type=["csv"])
+sensor_file = st.file_uploader("ارفع ملف Sensor Dataset", type=["csv"])
 
 if carset_file and sensor_file:
     try:
         carset_df = pd.read_csv(carset_file)
         sensor_df = pd.read_csv(sensor_file)
 
-        # إنشاء عمود record_id في الملفين
-        carset_df["record_id"] = range(1, len(carset_df) + 1)
-        sensor_df["record_id"] = range(1, len(sensor_df) + 1)
+        # توليد عمود ID فريد مشترك بينهم
+        row_count = min(len(carset_df), len(sensor_df))
+        ids = [str(uuid.uuid4()) for _ in range(row_count)]
 
-        # دمج الملفين
-        merged_df = pd.merge(carset_df, sensor_df, on="record_id", how="inner")
+        # تقليص البيانات لطول موحد وإضافة عمود id
+        carset_df = carset_df.iloc[:row_count].copy()
+        sensor_df = sensor_df.iloc[:row_count].copy()
 
-        st.success("تم دمج الملفين بنجاح!")
+        carset_df["id"] = ids
+        sensor_df["id"] = ids
 
-        st.subheader("عرض البيانات المدموجة")
-        st.dataframe(merged_df)
+        st.success("تمت إضافة عمود 'id' بنجاح في كلا الملفين")
 
-        # زر لتحميل الملف المدموج
-        csv = merged_df.to_csv(index=False).encode("utf-8")
-        st.download_button("تحميل الملف المدموج", csv, "merged_dataset.csv", "text/csv")
+        st.subheader("معاينة ملف Carset بعد التعديل")
+        st.dataframe(carset_df.head())
+
+        st.subheader("معاينة ملف Sensor Dataset بعد التعديل")
+        st.dataframe(sensor_df.head())
+
+        # حفظ الملفات المعدلة
+        carset_csv = carset_df.to_csv(index=False).encode('utf-8')
+        sensor_csv = sensor_df.to_csv(index=False).encode('utf-8')
+
+        st.download_button("تحميل Carset مع id", carset_csv, file_name="carset_with_id.csv", mime='text/csv')
+        st.download_button("تحميل Sensor Dataset مع id", sensor_csv, file_name="sensor_with_id.csv", mime='text/csv')
 
     except Exception as e:
         st.error(f"حدث خطأ أثناء المعالجة: {e}")
-else:
-    st.info("يرجى رفع الملفين لإجراء الدمج.")
+
