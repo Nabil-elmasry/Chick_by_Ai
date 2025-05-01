@@ -1,83 +1,72 @@
+
 import streamlit as st
-import os
 from PIL import Image
-import base64
 
-# إعدادات الصفحة
-st.set_page_config(
-    page_title="AI Diagnosis for Cars",
-    page_icon="\U0001F697",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+st.set_page_config(page_title="الصفحة الرئيسية", layout="wide")
 
-# تنسيق CSS لتجميل الصفحة
+# تنسيق العنوان الرئيسي
 st.markdown("""
-    <style>
-    .title {
-        font-size:50px;
-        font-weight:bold;
-        color:#4CAF50;
-        text-align: center;
-        margin-top: 30px;
-    }
-    .subtitle {
-        font-size:22px;
-        color:#555;
-        text-align: center;
-    }
-    .button {
-        display: flex;
-        justify-content: center;
-        margin: 30px;
-    }
-    </style>
+    <div style='background-color:#0D6EFD;padding:15px;border-radius:10px'>
+        <h1 style='color:white;text-align:center;'>مرحبًا بك في مشروع الذكاء الاصطناعي لتشخيص أعطال السيارات</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# عرض التعليمات
+st.markdown("""
+### من فضلك اختر من القائمة الجانبية للتنقل بين الصفحات المختلفة:
+- صفحة تدريب النموذج
+- صفحة التوقع
+- تحليل الانحراف
+- معلومات عن النموذج
+- سجل الدعم الفني (Support Log)
+- حول المشروع
 """, unsafe_allow_html=True)
 
-# العنوان الرئيسي
-st.markdown('<div class="title">مرحبًا بك في مشروع الذكاء الاصطناعي لتشخيص أعطال السيارات</div>', unsafe_allow_html=True)
-
-# الوصف التعريفي
-st.markdown('<div class="subtitle">اختر من القائمة الجانبية للتنقل بين الصفحات.</div>', unsafe_allow_html=True)
-
-# زر عرض الهيكل التنظيمي
-with st.container():
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("عرض الهيكل التنظيمي - نصي"):
-            with st.expander("الهيكل التنظيمي النصي للمشروع"):
-                st.code("""
-AI_diagnosis_project/
-├── main.py
-├── Carset.csv
-├── codes_dataset.csv
-├── normal_stats.csv
-├── Pages/
-│   ├── landing.py
-│   ├── train_model.py
-│   ├── prediction.py
-│   ├── model_info.py
-│   ├── deviation_chart.py
-│   ├── about.py
-│   ├── support_log.py
-├── modules/
-│   ├── data_loader.py
-│   ├── preprocessing.py
-│   ├── viz.py
-│   ├── load_codes.py
-├── assets/
-│   └── backup/
-                """)
-
-    with col2:
-        if st.button("عرض الهيكل التنظيمي - بياني"):
-            from streamlit.components.v1 import html
-            html("""
-            <iframe width="100%" height="500" src="https://dreampuf.github.io/GraphvizOnline/#digraph%20G%20%7B%0A%20%20main%20-%3E%20train_model%0A%20%20main%20-%3E%20prediction%0A%20train_model%20-%3E%20model_info%0A%20train_model%20-%3E%20preprocessing%0A%20train_model%20-%3E%20data_loader%0A%20prediction%20-%3E%20deviation_chart%0A%20prediction%20-%3E%20viz%0A%20prediction%20-%3E%20load_codes%0A%20main%20-%3E%20about%0A%20main%20-%3E%20support_log%0A%7D" frameborder="0"></iframe>
-            """, height=520)
-
-# معلومات إضافية أو شعارات مستقبلًا
 st.markdown("---")
-st.markdown("تم تطوير هذا المشروع باستخدام Python وStreamlit لتوفير تشخيص ذكي وفوري لأعطال السيارات بناءً على بيانات الحساسات.")
 
+# عرض الشكل التنظيمي نصيًا
+st.subheader("الهيكل التنظيمي للمشروع")
 
+st.markdown("""
+<div style='background-color:#F8F9FA; padding:20px; border:1px solid #dee2e6; border-radius:10px; font-family:Arial'>
+<ul>
+<li><strong>AI_diagnosis_project</strong></li>
+<ul>
+  <li>main.py</li>
+  <li>Carset.csv</li>
+  <li><strong>pages/</strong>
+    <ul>
+      <li>landing.py</li>
+      <li>diagnosis.py</li>
+      <li>train_model.py</li>
+      <li>prediction.py</li>
+      <li>model_info.py</li>
+      <li>deviation_chart.py</li>
+      <li>about.py</li>
+      <li>support_log.py</li>
+    </ul>
+  </li>
+  <li><strong>modules/</strong>
+    <ul>
+      <li>data_loader.py</li>
+      <li>preprocessing.py</li>
+      <li>viz.py</li>
+      <li>load_codes.py</li>
+    </ul>
+  </li>
+  <li><strong>assets/</strong>
+    <ul>
+      <li>codes_dataset.csv</li>
+      <li>normal_stats.csv</li>
+    </ul>
+  </li>
+</ul>
+</ul>
+</div>
+""", unsafe_allow_html=True)
+
+# صورة زخرفية أو شعار إن أردت
+# image = Image.open("pages/assets/logo.png")
+# st.image(image, width=150)
