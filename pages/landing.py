@@ -1,87 +1,39 @@
 
 import streamlit as st
 
-# Page config
-st.set_page_config(page_title="Home Page", layout="wide")
+# إعداد الصفحة
+st.set_page_config(page_title="الصفحة الرئيسية", layout="wide")
 
-# Styling with CSS
+# عنوان الصفحة بتأثير لوني
+st.markdown(
+    "<h1 style='color:white; background-color:#dc3545; padding:20px; border-radius:12px; text-align:center;'>"
+    "Welcome to the AI Project for Vehicle Fault Diagnosis"
+    "</h1>", unsafe_allow_html=True
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# نبذة مختصرة عن المشروع
+with st.expander("Project Summary"):
+    st.markdown("""
+    <div style='background-color:#fff3cd; border-left:6px solid #ffc107; padding:20px; border-radius:10px; font-size:18px; line-height:1.8; color:#212529;'>
+        This project aims to assist vehicle technicians and users in diagnosing faults using Artificial Intelligence. <br><br>
+        The system analyzes vehicle data such as fuel trims, sensor values, and error codes to identify potential issues and provide predictions. <br><br>
+        It's built using Python and Machine Learning models and allows users to train the model, run predictions, view deviation analysis, and understand model behavior.
+    </div>
+    """, unsafe_allow_html=True)
+
+# إرشادات التنقل
 st.markdown("""
-<style>
-.header {
-  background: linear-gradient(90deg, #dc3545, #0d6efd);
-  color: white;
-  padding: 25px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 30px;
-  font-weight: bold;
-  box-shadow: 2px 2px 12px #888;
-  animation: fadeIn 2s ease-in;
-}
-.section {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
-  font-size: 17px;
-  color: #333;
-  box-shadow: 0px 0px 10px #bbb;
-}
-ul li {
-  padding-bottom: 6px;
-}
-@keyframes fadeIn {
-  from {opacity: 0;}
-  to {opacity: 1;}
-}
-</style>
+<div style='font-size:18px; background-color:#e9ecef; padding:15px; border-radius:10px;'>
+Use the sidebar to navigate between pages such as:
+<ul>
+<li>Model Training</li>
+<li>Prediction</li>
+<li>Deviation Analysis</li>
+<li>Model Info</li>
+<li>Support Log</li>
+<li>About</li>
+</ul>
+</div>
 """, unsafe_allow_html=True)
-
-# Header
-st.markdown("<div class='header'>Welcome to the AI Car Fault Diagnosis Project</div>", unsafe_allow_html=True)
-
-# Instruction section in expander
-with st.expander("Click to show project navigation guide"):
-    st.markdown("""
-    <div class='section'>
-    Choose from the sidebar to navigate between pages:
-    <ul>
-    <li>Train the model</li>
-    <li>Diagnose vehicle faults</li>
-    <li>Deviation analysis</li>
-    <li>Model information</li>
-    <li>Project overview</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Organizational structure in expander
-with st.expander("Click to show project structure"):
-    st.markdown("""
-    <div class='section'>
-    <pre>
-AI_diagnosis_project/
-│
-├── main.py
-├── Carset.csv
-├── pages/
-│   ├── landing.py
-│   ├── diagnosis.py
-│   ├── train_model.py
-│   ├── prediction.py
-│   ├── model_info.py
-│   ├── deviation_chart.py
-│   └── about.py
-│
-├── modules/
-│   ├── data_loader.py
-│   ├── preprocessing.py
-│   ├── viz.py
-│   └── load_codes.py
-│
-└── assets/
-    ├── codes_dataset.csv
-    └── normal_stats.csv
-    </pre>
-    </div>
-    """, unsafe_allow_html=True)
-
