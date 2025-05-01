@@ -1,12 +1,12 @@
 
 import streamlit as st
 
-# إعداد الصفحة
+#  إعداد الصفحة
 st.set_page_config(page_title="الصفحة الرئيسية", layout="wide")
 
 # عنوان الصفحة بتأثير لوني
 st.markdown(
-    "<h1 style='color:white; background-color:#dc3545; padding:20px; border-radius:12px; text-align:center;'>"
+    "<h1 style='color:white; background-color:#FF8C00; padding:20px; border-radius:12px; text-align:center;'>"
     "Welcome to the AI Project for Vehicle Fault Diagnosis"
     "</h1>", unsafe_allow_html=True
 )
