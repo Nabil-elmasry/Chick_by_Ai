@@ -1,44 +1,43 @@
 
-# pages/train_model.py
-
 import streamlit as st
-from modules.data_loader import load_sensor_data, load_carset
-from modules.preprocessing import prepare_training_data
-from modules.model import train_and_save_model
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+import joblib
+import os
 
-st.set_page_config(page_title="📊 تدريب النموذج", layout="wide")
+st.set_page_config(page_title="Model Training", layout="wide")
+st.markdown("<h1 style='color:white; background-color:#007acc; padding:20px; border-radius:12px; text-align:center;'>Train the AI Diagnostic Model</h1>", unsafe_allow_html=True)
 
-st.title("📊 تدريب نموذج تنبؤ الأعطال")
-st.write(
-    """
-    في هذه الصفحة يمكنك رفع ملف قراءات الحساسات للتدريب وملف Carset لاستخراج العلامات (Fault Codes)،
-    ثم تدريب نموذج الـ Random Forest وحفظه تلقائيًا.
-    """
-)
+# تحميل البيانات
+data_path = "Carset.csv"
+if not os.path.exists(data_path):
+    st.error("Carset.csv file not found. Please make sure the dataset is in the main directory.")
+else:
+    df = pd.read_csv(data_path)
 
-# رفع ملفات CSV
-sensor_file = st.file_uploader(
-    "1. ارفع ملف الحساسات (sensor dataset)", type=["csv"], key="sensor_file"
-)
-carset_file = st.file_uploader(
-    "2. ارفع ملف Carset (carset.csv)", type=["csv"], key="carset_file"
-)
+    # عرض عينة من البيانات
+    st.subheader("Sample of the dataset:")
+    st.dataframe(df.head())
 
-if st.button("🚀 ابدأ التدريب"):
-    if sensor_file is None or carset_file is None:
-        st.error("❌ الرجاء رفع كلا الملفين قبل البدء بالتدريب.")
-    else:
-        with st.spinner("⏳ جاري تحميل وتنظيف البيانات..."):
-            # تحميل البيانات
-            sensor_df = load_sensor_data(sensor_file)
-            carset_df = load_carset(carset_file)
-        st.success("✅ تم تحميل البيانات وتنظيفها بنجاح.")
+    # اختيار العمود الهدف
+    target_column = st.selectbox("Select the target column (the fault column):", df.columns)
 
-        with st.spinner("⏳ جاري إعداد بيانات التدريب..."):
-            X, y = prepare_training_data(sensor_df, carset_df)
-        st.success(f"✅ تم تجهيز مجموعة التدريب ({X.shape[0]} عينة، {X.shape[1]} ميزة).")
+    # تجهيز البيانات
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
 
-        with st.spinner("⏳ جاري تدريب النموذج..."):
-            # هنا يتم حفظ النموذج في fault_model.pkl
-            train_and_save_model(X, y, model_path="fault_model.pkl")
-        st.success("🎉 تم تدريب النموذج وحفظه في `fault_model.pkl` بنجاح.")
+    # تقسيم البيانات
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # تدريب النموذج
+    if st.button("Train Model"):
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
+        acc = model.score(X_test, y_test)
+
+        # حفظ النموذج
+        joblib.dump(model, "trained_model.pkl")
+
+        st.success(f"Model trained successfully with accuracy: {acc:.2%}")
+        st.info("Model saved as 'trained_model.pkl'.")
