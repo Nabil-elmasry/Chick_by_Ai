@@ -1,22 +1,48 @@
 
 import streamlit as st
-import time
 
-# إعداد الصفحة
 st.set_page_config(page_title="الصفحة الرئيسية", layout="wide")
 
-# تأثير متحرك للترحيب
-welcome_text = "مرحبًا بك في مشروع الذكاء الاصطناعي لتشخيص أعطال السيارات"
-st.markdown(
-    f"<h1 style='color:#ffffff;background-color:#0d6efd;padding:20px;border-radius:10px;text-align:center;'>{welcome_text}</h1>",
-    unsafe_allow_html=True,
-)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# إرشادات التنقل
+# CSS للتأثير والألوان
 st.markdown("""
-<div style='font-size:18px; background-color:#f1f1f1; padding:20px; border-radius:10px;'>
+<style>
+@keyframes fadeIn {
+  from {opacity: 0;}
+  to {opacity: 1;}
+}
+.fade-in {
+  animation: fadeIn 2s ease-in;
+}
+
+.header {
+  color: white;
+  background-color: #0078D4;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  box-shadow: 2px 2px 10px #ccc;
+}
+
+.section {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+  font-size: 18px;
+  color: #333;
+  box-shadow: 0px 0px 8px #ddd;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# عنوان متحرك
+st.markdown(f"<div class='header fade-in'>مرحبًا بك في مشروع الذكاء الاصطناعي لتشخيص أعطال السيارات</div>", unsafe_allow_html=True)
+
+# تعليمات الاستخدام
+st.markdown("""
+<div class='section'>
 اختر من القائمة الجانبية للتنقل بين الصفحات المختلفة:
 <ul>
 <li>صفحة تدريب النموذج</li>
@@ -29,39 +55,37 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
-
-# عرض الهيكل التنظيمي النصي
-st.subheader("الهيكل التنظيمي للمشروع")
+# الهيكل التنظيمي
+st.markdown("<div class='section'><h4>الهيكل التنظيمي للمشروع:</h4>", unsafe_allow_html=True)
 
 with st.expander("عرض تفاصيل الهيكل"):
     st.markdown("""
-    <div style='background-color:#f8f9fa; padding:20px; border:1px solid #ccc; border-radius:10px'>
-    <pre style='font-size:16px'>
-    AI_diagnosis_project/
-    │
-    ├── main.py
-    ├── Carset.csv
-    ├── pages/
-    │   ├── landing.py
-    │   ├── diagnosis.py
-    │   ├── train_model.py
-    │   ├── prediction.py
-    │   ├── model_info.py
-    │   ├── deviation_chart.py
-    │   ├── about.py
-    │   └── support_log.py
-    │
-    ├── modules/
-    │   ├── data_loader.py
-    │   ├── preprocessing.py
-    │   ├── viz.py
-    │   └── load_codes.py
-    │
-    └── assets/
-        ├── codes_dataset.csv
-        └── normal_stats.csv
+    <pre>
+AI_diagnosis_project/
+│
+├── main.py
+├── Carset.csv
+├── pages/
+│   ├── landing.py
+│   ├── diagnosis.py
+│   ├── train_model.py
+│   ├── prediction.py
+│   ├── model_info.py
+│   ├── deviation_chart.py
+│   ├── about.py
+│   └── support_log.py
+│
+├── modules/
+│   ├── data_loader.py
+│   ├── preprocessing.py
+│   ├── viz.py
+│   └── load_codes.py
+│
+└── assets/
+    ├── codes_dataset.csv
+    └── normal_stats.csv
     </pre>
-    </div>
     """, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
 
