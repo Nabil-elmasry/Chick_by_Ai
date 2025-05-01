@@ -25,7 +25,7 @@ with st.expander("Project Summary"):
 
 # إرشادات التنقل
 st.markdown("""
-<div style='font-size:18px; background-color:#e9ecef; padding:15px; border-radius:10px;'>
+<div style='font-size:18px; background-color:#red; padding:15px; border-radius:10px;'>
 Use the sidebar to navigate between pages such as:
 <ul>
 <li>Model Training</li>
