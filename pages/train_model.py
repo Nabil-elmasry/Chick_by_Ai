@@ -7,7 +7,6 @@ from modules.model import train_and_save_model, evaluate_model
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import classification_report, confusion_matrix
 
 st.set_page_config(page_title="📊 تدريب النموذج", layout="wide")
 
@@ -42,27 +41,28 @@ if st.button("🚀 ابدأ التدريب"):
         st.success(f"✅ تم تجهيز مجموعة التدريب ({X.shape[0]} عينة، {X.shape[1]} ميزة).")
 
         with st.spinner("⏳ جاري تدريب النموذج..."):
-            # حفظ النموذج
-            train_and_save_model(X, y, model_path="fault_model.pkl")
+            model = train_and_save_model(X, y, model_path="fault_model.pkl")
         st.success("🎉 تم تدريب النموذج وحفظه في `fault_model.pkl` بنجاح.")
 
-        # تقييم النموذج
-        with st.spinner("📈 جاري تقييم النموذج..."):
-            y_pred, report_df, cm = evaluate_model(X, y)
-        
-        st.subheader("📋 تقرير أداء النموذج")
-        st.dataframe(report_df)
+        st.subheader("📈 تقييم النموذج:")
+        with st.spinner("⏳ جاري التقييم..."):
+            y_pred, report_df, cm = evaluate_model(X, y, model)
 
-        st.subheader("🔍 مصفوفة الالتباس")
-        fig, ax = plt.subplots()
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-        st.pyplot(fig)
+            st.write("✅ **تقرير الأداء:**")
+            st.dataframe(report_df.style.format("{:.2f}"))
 
-        # زر تحميل التقرير
-        csv = report_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 تحميل تقرير الأداء بصيغة CSV",
-            data=csv,
-            file_name='model_performance_report.csv',
-            mime='text/csv',
-        )
+            # زر تحميل التقرير كـ CSV
+            csv_data = report_df.to_csv().encode('utf-8')
+            st.download_button(
+                label="⬇️ تحميل تقرير الأداء كـ CSV",
+                data=csv_data,
+                file_name="evaluation_report.csv",
+                mime="text/csv"
+            )
+
+            st.write("✅ **مصفوفة الالتباس (Confusion Matrix):**")
+            fig, ax = plt.subplots()
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+            ax.set_xlabel("التوقع")
+            ax.set_ylabel("القيمة الحقيقية")
+            st.pyplot(fig)
