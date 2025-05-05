@@ -1,3 +1,5 @@
+# pages/train_model.py
+
 import streamlit as st
 from modules.data_loader import load_sensor_data, load_carset
 from modules.preprocessing import prepare_training_data
@@ -30,6 +32,7 @@ if st.button("🚀 ابدأ التدريب"):
         st.error("❌ الرجاء رفع كلا الملفين قبل البدء بالتدريب.")
     else:
         with st.spinner("⏳ جاري تحميل وتنظيف البيانات..."):
+            # تحميل البيانات
             sensor_df = load_sensor_data(sensor_file)
             carset_df = load_carset(carset_file)
         st.success("✅ تم تحميل البيانات وتنظيفها بنجاح.")
@@ -39,29 +42,27 @@ if st.button("🚀 ابدأ التدريب"):
         st.success(f"✅ تم تجهيز مجموعة التدريب ({X.shape[0]} عينة، {X.shape[1]} ميزة).")
 
         with st.spinner("⏳ جاري تدريب النموذج..."):
-            model, y_pred = train_and_save_model(X, y, model_path="fault_model.pkl", return_predictions=True)
+            # حفظ النموذج
+            train_and_save_model(X, y, model_path="fault_model.pkl")
         st.success("🎉 تم تدريب النموذج وحفظه في `fault_model.pkl` بنجاح.")
 
-        # عرض سجل التدريب
+        # تقييم النموذج
+        with st.spinner("📈 جاري تقييم النموذج..."):
+            y_pred, report_df, cm = evaluate_model(X, y)
+        
         st.subheader("📋 تقرير أداء النموذج")
+        st.dataframe(report_df)
 
-        report = classification_report(y, y_pred, output_dict=True)
-        st.dataframe(pd.DataFrame(report).transpose())
-
-        # Confusion Matrix
-        cm = confusion_matrix(y, y_pred)
+        st.subheader("🔍 مصفوفة الالتباس")
         fig, ax = plt.subplots()
         sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-        ax.set_xlabel("التوقع")
-        ax.set_ylabel("القيمة الحقيقية")
-        ax.set_title("مصفوفة الالتباس (Confusion Matrix)")
         st.pyplot(fig)
 
-        st.success("✅ تم عرض تقرير الأداء بنجاح.")
-
-
-تم تحديث صفحة التدريب بنجاح لعرض تقرير أداء النموذج بعد التدريب، ويشمل:
-
-تقرير التصنيف (classification report)
-
-مصفوفة الالتباس (confusion matrix)
+        # زر تحميل التقرير
+        csv = report_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 تحميل تقرير الأداء بصيغة CSV",
+            data=csv,
+            file_name='model_performance_report.csv',
+            mime='text/csv',
+        )
