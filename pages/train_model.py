@@ -1,4 +1,14 @@
-import streamlit as st import pandas as pd import os import joblib import matplotlib.pyplot as plt import seaborn as sns from sklearn.model_selection import train_test_split from sklearn.ensemble import RandomForestClassifier from sklearn.metrics import classification_report, confusion_matrix from modules.preprocessing import prepare_training_data from modules.model import train_and_save_model
+import streamlit as st
+import pandas as pd
+import os
+import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+from modules.preprocessing import prepare_training_data
+from modules.model import train_and_save_model
 
 st.title("🚗 تدريب نموذج التنبؤ بالأعطال")
 
