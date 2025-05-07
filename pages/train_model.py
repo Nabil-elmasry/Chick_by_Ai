@@ -1,40 +1,87 @@
-import streamlit as st import pandas as pd from sklearn.model_selection import train_test_split from sklearn.ensemble import RandomForestClassifier from sklearn.metrics import classification_report, accuracy_score import joblib import os
+import streamlit as st
+import pandas as pd
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
 
-st.set_page_config(page_title="تدريب النموذج", layout="wide") st.title("🚗 تدريب نموذج الذكاء الاصطناعي للتنبؤ بالأعطال")
+st.set_page_config(page_title="تدريب النموذج", layout="wide")
+st.title("✨ صفحة تدريب النموذج على بيانات الأعطال")
 
-تحميل البيانات المدمجة
+DATA_DIR = "data"
+MERGED_FILE = os.path.join(DATA_DIR, "merged_data.csv")
+MODEL_RESULTS = os.path.join(DATA_DIR, "model_results.txt")
 
-data_path = "data/merged_data.csv" if not os.path.exists(data_path): st.warning("الرجاء رفع ملف البيانات المدموجة أولاً.") uploaded = st.file_uploader("📄 ارفع ملف البيانات المدموجة (CSV)", type=["csv"]) if uploaded is not None: with open(data_path, "wb") as f: f.write(uploaded.read()) st.success("✅ تم حفظ الملف بنجاح!")
+# خطوة 1: رفع الملفات
+st.subheader("1️⃣ رفع ملفات البيانات")
+sensor_file = st.file_uploader("ارفع ملف الحساسات", type="csv", key="sensor")
+carset_file = st.file_uploader("ارفع ملف الأعطال (carset)", type="csv", key="carset")
 
-بدء التدريب
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
 
-if os.path.exists(data_path): df = pd.read_csv(data_path)
+# حفظ يدوي للملفات
+if sensor_file and carset_file:
+    st.success("تم رفع الملفين بنجاح!")
+    if st.button("💾 حفظ الملفات يدويًا"):
+        sensor_df = pd.read_csv(sensor_file)
+        carset_df = pd.read_csv(carset_file)
 
-if "fault_code" not in df.columns:
-    st.error("❌ العمود 'fault_code' غير موجود في البيانات. تأكد من الدمج الصحيح")
-else:
+        sensor_df.to_csv(os.path.join(DATA_DIR, "sensor.csv"), index=False)
+        carset_df.to_csv(os.path.join(DATA_DIR, "carset.csv"), index=False)
+        st.success("✅ تم حفظ الملفات بنجاح داخل مجلد data")
+
+    # زر الدمج
+    if os.path.exists(os.path.join(DATA_DIR, "sensor.csv")) and os.path.exists(os.path.join(DATA_DIR, "carset.csv")):
+        st.subheader("2️⃣ دمج الملفين")
+        if st.button("🔗 دمج الملفين بناء على record_id"):
+            try:
+                sensor_df = pd.read_csv(os.path.join(DATA_DIR, "sensor.csv"))
+                carset_df = pd.read_csv(os.path.join(DATA_DIR, "carset.csv"))
+                merged_df = pd.merge(sensor_df, carset_df, on="record_id", how="inner")
+                st.dataframe(merged_df.head())
+                merged_df.to_csv(MERGED_FILE, index=False)
+                st.success("✅ تم الدمج والحفظ في data/merged_data.csv")
+            except Exception as e:
+                st.error(f"❌ حدث خطأ أثناء الدمج: {e}")
+
+# رفع ملف الدمج قبل التدريب
+st.subheader("3️⃣ تأكيد ملف الدمج")
+uploaded_merged = st.file_uploader("ارفع ملف الدمج (أو استخدم المحفوظ)", type="csv", key="merged")
+
+if uploaded_merged or os.path.exists(MERGED_FILE):
+    if uploaded_merged:
+        merged_df = pd.read_csv(uploaded_merged)
+    else:
+        merged_df = pd.read_csv(MERGED_FILE)
+
+    st.success("✅ تم تحميل ملف الدمج")
+    st.dataframe(merged_df.head())
+
+    # بدء التدريب
+    st.subheader("4️⃣ بدء التدريب")
     if st.button("🚀 ابدأ التدريب"):
         try:
-            y = df["fault_code"]
-            X = df.drop(columns=["fault_code", "record_id"], errors='ignore')
+            X = merged_df.drop(columns=["fault_code", "record_id"])
+            y = merged_df["fault_code"]
 
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-            model = RandomForestClassifier(n_estimators=100, random_state=42)
+            model = RandomForestClassifier()
             model.fit(X_train, y_train)
-            
+
             y_pred = model.predict(X_test)
-            acc = accuracy_score(y_test, y_pred)
-            report = classification_report(y_test, y_pred, output_dict=False)
+            report = classification_report(y_test, y_pred)
 
-            st.success("✅ تم تدريب النموذج بنجاح")
-            st.markdown(f"### الدقة العامة: `{acc:.2f}`")
-            st.text("تقرير التصنيف:")
-            st.text(report)
+            st.success("✅ تم التدريب بنجاح")
+            st.text("نتائج التقييم:")
+            st.code(report)
 
-            if st.button("💾 احفظ النموذج المدرب"):
-                joblib.dump(model, "model/trained_model.pkl")
-                st.success("✅ تم حفظ النموذج المدرب داخل مجلد model")
+            if st.button("💾 احفظ نتائج التقييم"):
+                with open(MODEL_RESULTS, "w") as f:
+                    f.write(report)
+                st.success("✅ تم حفظ نتائج التقييم في model_results.txt")
+
         except Exception as e:
-            st.error(f"❌ حدث خطأ أثناء التدريب: {str(e)}")
-
+            st.error(f"❌ حدث خطأ أثناء التدريب: {e}")
+else:
+    st.warning("⚠️ من فضلك ارفع ملف الدمج أو تأكد من وجود merged_data.csv قبل بدء التدريب.")
