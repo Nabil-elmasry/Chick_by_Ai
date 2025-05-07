@@ -1,89 +1,72 @@
-# pages/train_model.py
+import streamlit as st import pandas as pd import os import joblib import matplotlib.pyplot as plt import seaborn as sns from sklearn.model_selection import train_test_split from sklearn.ensemble import RandomForestClassifier from sklearn.metrics import classification_report, confusion_matrix from modules.preprocessing import prepare_training_data from modules.model import train_and_save_model
 
-import streamlit as st
-from modules.data_loader import load_sensor_data, load_carset
-from modules.preprocessing import prepare_training_data
-from modules.model import train_and_save_model
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import classification_report, confusion_matrix
-import os
-import traceback
+st.title("🚗 تدريب نموذج التنبؤ بالأعطال")
 
-st.set_page_config(page_title="📊 تدريب النموذج", layout="wide")
-st.title("📊 تدريب نموذج تنبؤ الأعطال")
+رفع الملفين
 
-sensor_file = st.file_uploader("تحميل ملف الحساسات (sensor.csv)", type=["csv"])
-carset_file = st.file_uploader("تحميل ملف carset.csv", type=["csv"])
+sensor_file = st.file_uploader("📤 ارفع ملف بيانات الحساسات (Sensor Data)", type=["csv"], key="sensor") carset_file = st.file_uploader("📤 ارفع ملف بيانات الأعطال (Carset Data)", type=["csv"], key="carset")
 
-# مسارات الحفظ
-os.makedirs("data", exist_ok=True)
-sensor_path = "data/sensor_with_id.csv"
-carset_path = "data/carset_with_id.csv"
-merged_path = "data/training_data_log.csv"
-eval_path = "data/evaluation_report.txt"
+if sensor_file and carset_file: sensor_df = pd.read_csv(sensor_file) carset_df = pd.read_csv(carset_file)
 
-# زر إضافة عمود ID
-if st.button("1️⃣ إضافة عمود ID تلقائيًا"):
-    if sensor_file and carset_file:
-        try:
-            sensor_df = pd.read_csv(sensor_file)
-            carset_df = pd.read_csv(carset_file)
+# زرار إضافة عمود ID
+if st.button("➕ إضافة عمود record_id للملفات"):
+    sensor_df.insert(0, 'record_id', range(1, 1 + len(sensor_df)))
+    carset_df.insert(0, 'record_id', range(1, 1 + len(carset_df)))
 
-            sensor_df["record_id"] = range(1, len(sensor_df) + 1)
-            carset_df["record_id"] = range(1, len(carset_df) + 1)
+    sensor_df.to_csv("data/sensor_with_id.csv", index=False)
+    carset_df.to_csv("data/carset_with_id.csv", index=False)
 
-            sensor_df.to_csv(sensor_path, index=False)
-            carset_df.to_csv(carset_path, index=False)
+    st.success("✅ تم إضافة العمود record_id وحفظ الملفات بنجاح")
 
-            st.success("تمت إضافة عمود ID وحفظ الملفات.")
-            st.download_button("⬇️ تحميل sensor_with_id.csv", sensor_df.to_csv(index=False), file_name="sensor_with_id.csv")
-            st.download_button("⬇️ تحميل carset_with_id.csv", carset_df.to_csv(index=False), file_name="carset_with_id.csv")
-            st.session_state["ready_for_training"] = True
+# زرار بدء التدريب
+if st.button("🚀 ابدأ التدريب"):
+    try:
+        # دمج الملفات بناءً على record_id
+        merged_df = pd.merge(sensor_df, carset_df, on="record_id", how="inner")
+        merged_df.to_csv("data/merged_training_data.csv", index=False)
 
-        except Exception as e:
-            st.error("حدث خطأ أثناء إضافة العمود.")
-            st.exception(e)
-    else:
-        st.warning("يرجى رفع الملفين.")
+        st.info("🔄 تم دمج البيانات وحفظ الملف بنجاح")
 
-# زر التدريب
-if st.session_state.get("ready_for_training"):
-    if st.button("2️⃣ ابدأ التدريب"):
-        try:
-            sensor_df = pd.read_csv(sensor_path)
-            carset_df = pd.read_csv(carset_path)
+        # تجهيز البيانات
+        X, y = prepare_training_data(sensor_df, carset_df)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-            # إعداد البيانات ودمجها
-            X, y, merged_df = prepare_training_data(sensor_df, carset_df)
-            merged_df.to_csv(merged_path, index=False)
-            st.success("تم حفظ ملف الدمج.")
-            st.download_button("⬇️ تحميل ملف الدمج", merged_df.to_csv(index=False), file_name="merged_training_data.csv")
+        # تدريب النموذج
+        model = train_and_save_model(X_train, y_train, model_path="model/fault_model.pkl")
 
-            # تدريب النموذج
-            model = train_and_save_model(X, y)
+        # التقييم
+        y_pred = model.predict(X_test)
+        report = classification_report(y_test, y_pred)
+        matrix = confusion_matrix(y_test, y_pred)
 
-            # التقييم
-            y_pred = model.predict(X)
-            report = classification_report(y, y_pred, output_dict=False)
-            matrix = confusion_matrix(y, y_pred)
+        st.success("✅ تم تدريب النموذج بنجاح")
 
-            with open(eval_path, "w", encoding="utf-8") as f:
-                f.write(report)
+        # عرض التقييم
+        st.subheader("📊 تقرير التقييم")
+        st.text(report)
 
-            st.success("تم حفظ تقرير التقييم.")
-            st.download_button("⬇️ تحميل تقرير التقييم", report, file_name="evaluation_report.txt")
+        fig, ax = plt.subplots()
+        sns.heatmap(matrix, annot=True, fmt="d", cmap="Blues", ax=ax)
+        ax.set_title("مصفوفة الالتباس")
+        ax.set_xlabel("التوقع")
+        ax.set_ylabel("الحقيقي")
+        st.pyplot(fig)
 
-            # عرض التقرير والمصفوفة
-            st.subheader("تقرير الدقة:")
-            st.text(report)
+        # حفظ التقرير نصيًا
+        with open("data/evaluation_report.txt", "w") as f:
+            f.write(report)
 
-            st.subheader("مصفوفة الالتباس:")
-            fig, ax = plt.subplots()
-            sns.heatmap(matrix, annot=True, fmt='d', cmap='YlGnBu', ax=ax)
-            st.pyplot(fig)
+        # تحميل الملفات الناتجة
+        st.subheader("📥 تحميل الملفات الناتجة")
+        with open("model/fault_model.pkl", "rb") as f:
+            st.download_button("⬇️ تحميل النموذج المدرب", f, file_name="fault_model.pkl")
+        with open("data/merged_training_data.csv", "rb") as f:
+            st.download_button("⬇️ تحميل ملف البيانات بعد الدمج", f, file_name="merged_training_data.csv")
+        with open("data/evaluation_report.txt", "rb") as f:
+            st.download_button("⬇️ تحميل تقرير التقييم", f, file_name="evaluation_report.txt")
 
-        except Exception as e:
-            st.error("حدث خطأ أثناء التدريب:")
-            st.code(traceback.format_exc())  # عرض الخطأ بالتفصيل
+    except Exception as e:
+        st.error(f"❌ حدث خطأ أثناء التدريب: {e}")
+
+else: st.warning("⚠️ من فضلك ارفع الملفين للبدء")
+
