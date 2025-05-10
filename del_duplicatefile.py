@@ -1,29 +1,23 @@
-import requests
+import os
 
-# بيانات المستودع
-OWNER = "اسم_المستخدم_بتاعك"
-REPO = "اسم_المشروع"
-FILE_PATH = "pages/train_model_v2 (1).py"  # غيّره حسب اسم الملف اللي عايز تمسحه
-TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxx"  # ضع التوكن هنا
+# المسار للمجلد اللي فيه الصفحات
+pages_dir = "pages"
 
-# Get file SHA (مهم لحذف الملف)
-url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{FILE_PATH}"
-headers = {"Authorization": f"token {TOKEN}"}
-res = requests.get(url, headers=headers)
-if res.status_code == 200:
-    sha = res.json()["sha"]
+# جمع كل أسماء الملفات داخل المجلد
+files = os.listdir(pages_dir)
 
-    # حذف الملف
-    delete_url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{FILE_PATH}"
-    delete_data = {
-        "message": "delete duplicate file",
-        "sha": sha,
-        "branch": "main"  # غيّرها لو الفرع اسمه غير كده
-    }
-    delete_res = requests.delete(delete_url, headers=headers, json=delete_data)
-    if delete_res.status_code == 200:
-        print("تم حذف الملف بنجاح.")
-    else:
-        print("فشل الحذف:", delete_res.json())
+# عمل قائمة بالملفات اللي فيها نفس الاسم "train_model_v2"
+duplicates = [f for f in files if f.startswith("train_model_v2") and f.endswith(".py")]
+
+# لو فيه أكتر من ملف بنفس الاسم
+if len(duplicates) > 1:
+    # نحذف كل الملفات ما عدا أول واحد
+    for file in duplicates[1:]:
+        file_path = os.path.join(pages_dir, file)
+        try:
+            os.remove(file_path)
+            print(f"تم حذف الملف: {file_path}")
+        except Exception as e:
+            print(f"خطأ أثناء الحذف: {e}")
 else:
-    print("لم يتم العثور على الملف:", res.json())
+    print("لا يوجد ملفات مكررة.")
