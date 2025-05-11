@@ -1,4 +1,4 @@
-# شغل ممتاز- Enhanced UI Version
+# شغل ممتاز - Enhanced UI Version
 import streamlit as st
 import pdfplumber
 import pandas as pd
@@ -148,11 +148,12 @@ if sensor_files and code_file:
             os.makedirs(backup_dir, exist_ok=True)
 
             if os.path.exists(csv_filename):
+                # نسخ احتياطي قبل التعديل
                 now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 backup_path = os.path.join(backup_dir, f"backup_{now}.csv")
                 shutil.copyfile(csv_filename, backup_path)
 
-            if os.path.exists(csv_filename):
+                # قراءة البيانات القديمة ودمجها مع الجديدة
                 existing_df = pd.read_csv(csv_filename)
                 final_df = pd.concat([existing_df, new_case_df], ignore_index=True)
             else:
