@@ -1,72 +1,177 @@
+# شغل ممتاز - Enhanced UI Version
 import streamlit as st
+import pdfplumber
+import pandas as pd
+import re
+import os
+import shutil
+import datetime
 
-# إعداد الصفحة
-st.set_page_config(page_title="الصفحة الرئيسية", layout="wide")
+st.set_page_config(page_title="تحليل الحساسات والأكواد", layout="wide")
 
-# عنوان الصفحة بتأثير متدرج وأيقونة
+# ==== تصميم العنوان ====
 st.markdown("""
-    <div style='background: linear-gradient(to right, #ff8c00, #ff9900); padding:20px; border-radius:12px; text-align:center; box-shadow: 2px 2px 12px #000;'>
-        <h1 style='color:white; font-size:36px;'>
-            &#9889; Welcome to the AI Project for Vehicle Fault Diagnosis
-        </h1>
+    <h1 style='text-align: center; color: #FFFFFF; background-color: #FF0000; padding: 10px; border-radius: 15px;'>
+        AI Car Diagnosis     
+    </h1>
+""", unsafe_allow_html=True)
+
+# ======= زر مسح الملف والذاكرة =======
+st.sidebar.markdown("""
+    <div style='background-color:#f4cccc;padding:10px;border-radius:10px;'>
+        <h4 style='color:#990000;'>تنظيف كامل للبيانات</h4>
     </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+if st.sidebar.button("احذف الملف وامسح الذاكرة"):
+    try:
+        if os.path.exists("Carset.csv"):
+            os.remove("Carset.csv")
+        if os.path.exists("backup"):
+            shutil.rmtree("backup")
+        st.session_state.clear()
+        st.sidebar.success("تم حذف الملفات ومسح الذاكرة. أعد تشغيل الصفحة.")
+    except Exception as e:
+        st.sidebar.error(f"حدث خطأ أثناء الحذف: {e}")
 
-# نبذة مختصرة عن المشروع
-with st.expander("Project Summary"):
-    st.markdown("""
-    <div style='background-color:#111; color:#f8f9fa; border-left:6px solid #ffa500; padding:20px; border-radius:10px; font-size:18px; line-height:1.8; box-shadow: 1px 1px 10px #000;'>
-        This project aims to assist vehicle technicians and users in diagnosing faults using Artificial Intelligence. <br><br>
-        The system analyzes vehicle data such as fuel trims, sensor values, and error codes to identify potential issues and provide predictions. <br><br>
-        It's built using Python and Machine Learning models and allows users to train the model, run predictions, view deviation analysis, and understand model behavior.
-    </div>
-    """, unsafe_allow_html=True)
+# ======= دوال استخراج البيانات =======
+def extract_text_from_pdf(uploaded_file):
+    with pdfplumber.open(uploaded_file) as pdf:
+        text = ""
+        for page in pdf.pages:
+            if page.extract_text():
+                text += page.extract_text() + "\n"
+    return text
 
-# إرشادات التنقل
+def extract_dtcs(text):
+    lines = text.split('\n')
+    dtcs = []
+    for line in lines:
+        match = re.search(r"(P\d{4})", line)
+        if match:
+            code = match.group(1)
+            desc = line.replace(code, "").strip(" :-–")
+            dtcs.append([code, desc.strip()])
+        elif line.strip():
+            dtcs.append(["No Code", line.strip()])
+    return dtcs
+
+def extract_sensor_data(text):
+    lines = text.split('\n')
+    sensors = []
+    for line in lines:
+        parts = line.strip().split()
+        if len(parts) >= 4:
+            name = ' '.join(parts[:-3])
+            value = parts[-3]
+            standard = parts[-2]
+            unit = parts[-1]
+            sensors.append([name, value, standard, unit])
+    return pd.DataFrame(sensors, columns=["Sensor", "Value", "Standard", "Unit"])
+
+# ======= واجهة رفع الملفات =======
 st.markdown("""
-<div style='font-size:18px; background-color:#1a1a1a; color:white; padding:15px; border-radius:10px; box-shadow: 0px 0px 6px #ff9900;'>
-<b>Use the sidebar to navigate between pages such as:</b>
-<ul>
-<li>Model Training</li>
-<li>Prediction</li>
-<li>Deviation Analysis</li>
-<li>Model Info</li>
-<li>Support Log</li>
-<li>About</li>
-</ul>
-</div>
-""", unsafe_allow_html=True)
-
-# الهيكل التنظيمي داخل زرار
-with st.expander("Show Project Structure"):
-    st.markdown("""
-    <div style='background-color:#000; color:#f1f1f1; padding:20px; border:1px solid #444; border-radius:10px; font-family: monospace; box-shadow: 1px 1px 10px #333;'>
-    <pre style='font-size:16px'>
-AI_diagnosis_project/
-│
-├── main.py
-├── Carset.csv
-├── pages/
-│   ├── landing.py
-│   ├── diagnosis.py
-│   ├── train_model.py
-│   ├── prediction.py
-│   ├── model_info.py
-│   ├── deviation_chart.py
-│   ├── about.py
-│   └── support_log.py
-│
-├── modules/
-│   ├── data_loader.py
-│   ├── preprocessing.py
-│   ├── viz.py
-│   └── load_codes.py
-│
-└── assets/
-    ├── codes_dataset.csv
-    └── normal_stats.csv
-    </pre>
+    <div style='background-color:#90EE90;padding:15px;border:2px dashed #2ecc71;border-radius:10px;'>
+        <h4 style='color:#34495e;'> من فضلك ارفع تقرير الحساسات (PDF)</h4>
     </div>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
+sensor_files = st.file_uploader("", type="pdf", accept_multiple_files=True)
+
+st.markdown("""
+    <div style='background-color:#FFFF66;padding:15px;border:2px dashed #f39c12;border-radius:10px;'>
+        <h4 style='color:#34495e;'>من فضلك ارفع تقرير الأعطال (PDF)</h4>
+    </div>
+""", unsafe_allow_html=True)
+code_file = st.file_uploader("", type="pdf")
+
+if sensor_files and code_file:
+    sensor_text = ""
+    for file in sensor_files:
+        sensor_text += extract_text_from_pdf(file)
+
+    code_text = extract_text_from_pdf(code_file)
+
+    df_sensors = extract_sensor_data(sensor_text)
+    dtcs = extract_dtcs(code_text)
+    df_dtcs = pd.DataFrame(dtcs, columns=["Code", "Description"])
+
+    st.subheader("1. بيانات الحساسات المستخرجة")
+    st.dataframe(df_sensors)
+
+    st.subheader("2. الأكواد المستخرجة")
+    st.dataframe(df_dtcs)
+
+    st.subheader("3. تحليل الانحراف وربط الحساسات بالأكواد")
+    matches = []
+    for _, dtc_row in df_dtcs.iterrows():
+        for _, sensor_row in df_sensors.iterrows():
+            if sensor_row["Sensor"].lower() in dtc_row["Description"].lower():
+                try:
+                    value = float(sensor_row["Value"])
+                    standard = float(sensor_row["Standard"])
+                    deviation_percent = abs(value - standard) / standard * 100 if standard != 0 else 0
+                    status = "High Deviation" if deviation_percent > 15 else "OK"
+                except:
+                    deviation_percent = "N/A"
+                    status = "Cannot Evaluate"
+
+                matches.append([
+                    dtc_row["Code"],
+                    dtc_row["Description"],
+                    sensor_row["Sensor"],
+                    sensor_row["Value"],
+                    sensor_row["Standard"],
+                    sensor_row["Unit"],
+                    f"{deviation_percent:.1f}%" if isinstance(deviation_percent, float) else deviation_percent,
+                    status
+                ])
+
+    if matches:
+        df_matches = pd.DataFrame(matches, columns=[
+            "Code", "Fault Description", "Sensor", "Value", "Standard", "Unit", "Deviation %", "Status"
+        ])
+        st.success("تم تحليل الانحراف وربط الحساسات بالأكواد بنجاح.")
+        st.dataframe(df_matches)
+    else:
+        st.info("لم يتم العثور على تطابق مباشر بين الحساسات والأكواد.")
+
+    # ======= زر يدوي لحفظ البيانات =======
+    st.subheader("4. حفظ البيانات يدويًا")
+    if st.button("احفظ البيانات الحالية"):
+        try:
+            sensor_dict = {row['Sensor']: row['Value'] for _, row in df_sensors.iterrows()}
+            sensor_dict['Fault Codes'] = ','.join(df_dtcs['Code'].tolist())
+            new_case_df = pd.DataFrame([sensor_dict])
+
+            csv_filename = "Carset.csv"
+            backup_dir = "backup"
+            os.makedirs(backup_dir, exist_ok=True)
+
+            if os.path.exists(csv_filename):
+                # نسخ احتياطي قبل التعديل
+                now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                backup_path = os.path.join(backup_dir, f"backup_{now}.csv")
+                shutil.copyfile(csv_filename, backup_path)
+
+                # قراءة البيانات القديمة ودمجها مع الجديدة
+                existing_df = pd.read_csv(csv_filename)
+                final_df = pd.concat([existing_df, new_case_df], ignore_index=True)
+            else:
+                final_df = new_case_df
+
+            final_df.to_csv(csv_filename, index=False)
+            st.success("تم حفظ البيانات في Carset.csv وتم إنشاء نسخة احتياطية في backup")
+
+            with open(csv_filename, "rb") as f:
+                st.download_button(
+                    label="Download Carset.csv",
+                    data=f,
+                    file_name="Carset.csv",
+                    mime="text/csv"
+                )
+
+        except Exception as e:
+            st.error(f"خطأ في حفظ البيانات: {e}")
+
+else:
+    st.warning("يرجى رفع تقرير الحساسات وتقرير الأعطال للاستمرار.")
