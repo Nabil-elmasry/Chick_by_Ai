@@ -9,3 +9,5 @@ streamlit
 pdfplumber
 pandas
 plotly
+
+pymupdf
