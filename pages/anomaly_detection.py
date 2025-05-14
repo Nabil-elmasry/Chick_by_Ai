@@ -1,62 +1,61 @@
-import streamlit as st
-import pandas as pd
-import joblib
-import numpy as np
-import matplotlib.pyplot as plt
+صفحة كشف الانحراف في قراءات الحساسات من PDF ورفع النموذج
 
-st.set_page_config(page_title="كشف الانحراف", page_icon="📉", layout="wide")
-st.title("📉 تحليل انحراف قراءات الحساسات")
+import streamlit as st import pandas as pd import numpy as np import joblib import matplotlib.pyplot as plt import base64 import fitz  # PyMuPDF import io
 
-# تحميل النموذج المدرب
-try:
-    model = joblib.load("trained_model.pkl")
-except FileNotFoundError:
-    st.error("❌ لم يتم العثور على النموذج المدرب. الرجاء تدريب النموذج أولاً.")
-    st.stop()
+st.set_page_config(page_title="كشف انحراف قراءات الحساسات", page_icon="📉", layout="wide") st.title("📉 تحليل انحراف قراءات الحساسات من تقرير PDF")
 
-# رفع ملف السيارة التي تحتوي على قراءات مشكوك فيها
-uploaded_file = st.file_uploader("📤 ارفع ملف قراءات السيارة المشكوك فيها", type=["csv"])
+رفع النموذج المدرب
 
-if uploaded_file:
-    df_input = pd.read_csv(uploaded_file)
-    st.success("✅ تم تحميل الملف")
-    st.dataframe(df_input.head())
+model_file = st.file_uploader("📤 ارفع ملف النموذج المدرب (.pkl)", type=["pkl"])
 
-    # استخراج الخصائص المتوقعة من النموذج
-    try:
-        prediction = model.predict(df_input)
-        prediction_proba = model.predict_proba(df_input)[:, 0]  # احتمال الانتماء للحالة السليمة
+رفع تقرير PDF
 
-        # حساب درجة الانحراف كـ (1 - احتمال السليم)
-        df_input["انحراف"] = 1 - prediction_proba
+uploaded_file = st.file_uploader("📤 ارفع تقرير PDF يحتوي على قراءات الحساسات", type=["pdf"])
 
-        st.subheader("🔍 نتائج كشف الانحراف")
-        st.dataframe(df_input[["انحراف"]].head(10))
+اختيار الحد الحرج للانحراف
 
-        # رسم بياني يوضح الانحراف
-        st.subheader("📊 رسم بياني يوضح مستوى الانحراف")
+threshold = st.slider("📏 اختر الحد الحرج للانحراف", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+
+دالة لاستخراج البيانات من PDF
+
+def extract_sensor_data_from_pdf(pdf_file): doc = fitz.open(stream=pdf_file.read(), filetype="pdf") sensor_data = {} for page in doc: text = page.get_text() lines = text.split("\n") for line in lines: if ":" in line: try: key, value = line.split(":", 1) value = value.strip().split(" ")[0] sensor_data[key.strip()] = float(value) except: continue doc.close() return pd.DataFrame([sensor_data])
+
+if model_file and uploaded_file: try: model = joblib.load(io.BytesIO(model_file.read())) df_input = extract_sensor_data_from_pdf(uploaded_file) st.success("✅ تم استخراج البيانات من التقرير") st.dataframe(df_input)
+
+model_features = model.feature_names_in_
+    missing_cols = [col for col in model_features if col not in df_input.columns]
+
+    if missing_cols:
+        st.warning(f"⚠️ الحقول التالية مفقودة ولا يمكن تحليلها بدقة: {missing_cols}")
+    else:
+        df_input = df_input[model_features]
+        prediction = model.predict_proba(df_input)[:, 0]
+        deviation_score = 1 - prediction[0]
+
+        st.markdown(f"### 🔍 درجة الانحراف: **{deviation_score:.2f}** (الحد الحرج: {threshold})")
 
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.plot(df_input["انحراف"].values, marker='o', linestyle='-', color='red', label='درجة الانحراف')
-        ax.axhline(y=0.5, color='gray', linestyle='--', label='الحد الفاصل')
-        ax.set_title("مستوى انحراف قراءات السيارة", fontsize=14)
-        ax.set_xlabel("السجلات", fontsize=12)
-        ax.set_ylabel("درجة الانحراف", fontsize=12)
+        ax.bar(df_input.columns, df_input.values[0], color='orange')
+        ax.set_title("قراءات الحساسات من السيارة المعطوبة", fontsize=14)
+        ax.set_ylabel("القيمة")
+        ax.axhline(y=threshold, color='red', linestyle='--', label='الحد الحرج')
+        ax.tick_params(axis='x', rotation=45)
         ax.legend()
-        ax.grid(True)
-
         st.pyplot(fig)
 
-        # رابط تحميل النتائج مع عمود الانحراف
-        def convert_df(df):
-            return df.to_csv(index=False).encode('utf-8')
+        report_text = f"تقرير الانحراف:\n\nدرجة الانحراف العامة: {deviation_score:.2f}\nالحد الحرج المستخدم: {threshold}\n"
+        if deviation_score > threshold:
+            report_text += "⚠️ هناك احتمال كبير لوجود انحراف عن الطبيعي."
+        else:
+            report_text += "✅ القراءات ضمن النطاق الطبيعي."
 
-        st.download_button(
-            label="📥 تحميل النتائج مع الانحراف",
-            data=convert_df(df_input),
-            file_name="deviation_results.csv",
-            mime="text/csv",
-        )
+        st.subheader("📄 تقرير مختصر")
+        st.code(report_text)
 
-    except Exception as e:
-        st.error(f"❌ حدث خطأ أثناء التنبؤ: {e}")
+        b64_report = base64.b64encode(report_text.encode()).decode()
+        href = f'<a href="data:file/txt;base64,{b64_report}" download="sensor_deviation_report.txt">⬇️ تحميل تقرير الانحراف</a>'
+        st.markdown(href, unsafe_allow_html=True)
+
+except Exception as e:
+    st.error(f"❌ خطأ أثناء التحليل: {e}")
+
