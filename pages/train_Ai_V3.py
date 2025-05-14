@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 from sklearn.ensemble import RandomForestClassifier
-from pathlib import Path
+import base64
 
 st.set_page_config(page_title="تدريب النموذج - بيانات سليمة", page_icon="🧠", layout="wide")
 st.title("🧠 تدريب النموذج على قراءات الحساسات السليمة")
@@ -17,16 +17,19 @@ if uploaded_file:
     if st.button("🚀 ابدأ التدريب"):
         try:
             model = RandomForestClassifier()
-            model.fit(df, [0]*len(df))  # كل السجلات سليمة (بدون أعطال)
+            model.fit(df, [0]*len(df))  # كل السجلات سليمة
 
-            # حفظ النموذج داخل مجلد المشروع
-            model_path = Path("trained_model.pkl")
-            joblib.dump(model, model_path)
+            # حفظ النموذج كملف
+            model_filename = "trained_model.pkl"
+            joblib.dump(model, model_filename)
 
-            # عرض رسالة توضح مكان الحفظ
-            absolute_path = model_path.resolve()
-            st.success("✅ تم حفظ النموذج بنجاح!")
-            st.markdown(f"**📁 تم حفظ النموذج في المسار التالي:**\n`{absolute_path}`")
+            # تحويل الملف إلى base64
+            with open(model_filename, "rb") as f:
+                data = f.read()
+                b64 = base64.b64encode(data).decode()
+                href = f'<a href="data:file/pkl;base64,{b64}" download="{model_filename}">⬇️ اضغط هنا لتحميل النموذج المدرب</a>'
+                st.markdown("### 📥 تحميل النموذج المدرب")
+                st.markdown(href, unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"❌ حدث خطأ أثناء التدريب: {e}")
