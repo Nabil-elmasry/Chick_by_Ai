@@ -1,55 +1,40 @@
-صفحة كشف الانحراف في قراءات الحساسات
 
-import streamlit as st import pandas as pd import numpy as np import joblib import plotly.graph_objects as go
+import streamlit as st
+import pandas as pd
+import joblib
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-إعداد الصفحة
+st.set_page_config(page_title="كشف انحراف قراءات الحساسات", page_icon="📉", layout="wide")
+st.title("📉 تحليل انحراف قراءات الحساسات")
 
-st.set_page_config(page_title="كشف الانحراف - النموذج المدرب", layout="wide") st.title("🔍 صفحة كشف الانحراف في قراءات الحساسات")
+uploaded_anomaly_file = st.file_uploader("📤 ارفع ملف قراءات السيارة بها مشكلة (CSV)", type=["csv"])
 
-تحميل النموذج المدرب
+if uploaded_anomaly_file:
+    try:
+        model = joblib.load("trained_model.pkl")
+        new_data = pd.read_csv(uploaded_anomaly_file)
 
-model = joblib.load("trained_model.pkl")
+        normal_data = model.estimators_[0].estimators_[0].tree_.value.shape[1]  # عدد الخصائص المستخدمة في التدريب
 
-st.markdown("### 1️⃣ ارفع ملف قراءات الحساسات للسيارة المشكوك في حالتها") anomaly_file = st.file_uploader("ارفع ملف الحساسات (بها عطل متوقع)", type="csv")
+        if new_data.shape[1] != model.n_features_in_:
+            st.error("❌ عدد أعمدة الملف لا يطابق النموذج المدرّب")
+        else:
+            # نحسب الفرق بين كل صف في البيانات وبين المتوسط العام للتدريب
+            baseline_mean = model.estimators_[0].estimators_[0].tree_.threshold[:model.n_features_in_]
+            diffs = np.abs(new_data - baseline_mean)
+            deviation_score = diffs.mean(axis=1)
 
-if anomaly_file: anomaly_df = pd.read_csv(anomaly_file) st.success("✅ تم رفع البيانات بنجاح") st.dataframe(anomaly_df.head())
+            st.subheader("📊 رسم بياني لدرجة الانحراف")
+            fig, ax = plt.subplots(figsize=(10, 5))
+            sns.lineplot(data=deviation_score, ax=ax, color="crimson")
+            ax.set_title("مستوى انحراف قراءات الحساسات", fontsize=16)
+            ax.set_xlabel("رقم السجل")
+            ax.set_ylabel("درجة الانحراف")
+            st.pyplot(fig)
 
-# التنبؤ بالقيم المتوقعة من النموذج المدرب
-predicted = model.predict(anomaly_df)
-predicted_df = pd.DataFrame(predicted, columns=anomaly_df.columns)
-
-# حساب الانحراف
-deviation_df = np.abs(anomaly_df - predicted_df)
-deviation_df["sensor"] = deviation_df.index
-
-st.markdown("### 2️⃣ جدول الانحراف لكل حساس")
-st.dataframe(deviation_df.drop(columns=["sensor"]))
-
-# رسم بياني للانحراف
-st.markdown("### 3️⃣ رسم بياني للانحراف")
-fig = go.Figure()
-
-for col in anomaly_df.columns:
-    fig.add_trace(go.Bar(
-        x=[col],
-        y=[deviation_df[col].mean()],
-        name=col,
-        marker_color='crimson' if deviation_df[col].mean() > 0.3 else 'orange' if deviation_df[col].mean() > 0.1 else 'green'
-    ))
-
-fig.update_layout(
-    title="متوسط الانحراف لكل حساس",
-    xaxis_title="اسم الحساس",
-    yaxis_title="قيمة الانحراف",
-    height=500,
-    plot_bgcolor='white',
-    showlegend=False
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-# حفظ الانحرافات كملف CSV
-st.markdown("### 📥 تحميل جدول الانحراف")
-csv = deviation_df.drop(columns=["sensor"]).to_csv(index=False).encode('utf-8')
-st.download_button("⬇️ تحميل ملف الانحراف", data=csv, file_name="deviation_report.csv", mime="text/csv")
+            st.dataframe(pd.DataFrame({"درجة الانحراف": deviation_score}))
+    except Exception as e:
+        st.error(f"❌ فشل في تحليل الانحراف: {e}")
 
