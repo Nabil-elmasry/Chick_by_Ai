@@ -1,28 +1,25 @@
-# training_anomaly_model.py
-
 import streamlit as st
 import pandas as pd
 import base64
-from sklearn.ensemble import IsolationForest
 import joblib
+from sklearn.ensemble import RandomForestClassifier
 
-st.set_page_config(page_title="تدريب نموذج الحساسات السليمة", layout="wide")
-st.title("📊 تدريب النموذج على قراءات الحساسات السليمة")
+st.set_page_config(page_title="تدريب النموذج - بيانات سليمة", page_icon="🧠", layout="wide")
+st.title("🧠 تدريب النموذج على قراءات الحساسات السليمة")
 
-# رفع ملف الحساسات
-uploaded_file = st.file_uploader("ارفع ملف قراءات الحساسات السليمة (CSV فقط)", type="csv")
+uploaded_file = st.file_uploader("📤 ارفع ملف قراءات الحساسات السليمة (CSV)", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    st.success("✅ تم رفع الملف بنجاح")
+    st.success("✅ تم تحميل الملف بنجاح")
     st.dataframe(df.head())
 
-    if st.button("🚀 ابدأ تدريب النموذج"):
+    if st.button("🚀 ابدأ التدريب"):
         try:
-            model = IsolationForest(n_estimators=100, contamination=0.01, random_state=42)
-            model.fit(df)
+            model = RandomForestClassifier()
+            model.fit(df, [0]*len(df))  # تصنيف موحد للسجلات السليمة فقط
 
-            joblib.dump(model, "sensor_model.pkl")  # حفظ النموذج
-            st.success("✅ تم تدريب النموذج بنجاح وحفظه كـ sensor_model.pkl")
+            joblib.dump(model, "trained_model.pkl")
+            st.success("✅ تم حفظ النموذج بنجاح كملف trained_model.pkl")
         except Exception as e:
             st.error(f"❌ حدث خطأ أثناء التدريب: {e}")
