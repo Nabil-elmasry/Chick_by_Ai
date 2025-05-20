@@ -1,6 +1,6 @@
-#pages/predict_fault_final.py
+pages/predict_fault_final.py
 
-import streamlit as st import pandas as pd import numpy as np import matplotlib.pyplot as plt import seaborn as sns import joblib import base64
+import streamlit as st import pandas as pd import numpy as np import matplotlib.pyplot as plt import seaborn as sns import joblib import os
 
 st.set_page_config(page_title="📊 كشف الانحراف وتوقع الأعطال", layout="wide") st.title("📊 توقع الأعطال وتحليل انحراف قراءات الحساسات")
 
@@ -46,30 +46,36 @@ model_features = model.feature_names_in_
             st.dataframe(outliers_df)
 
             st.subheader("🧾 تقرير المقارنة الفردية")
-            compare_lines = []
-            for i, row in outliers_df.iterrows():
-                entry = f"- قراءة رقم {i+1}:\n"
-                for col in model_features:
-                    entry += f"    • {col}: {row[col]}\n"
-                entry += f"    ⚠️ درجة الانحراف: {row['deviation_score']:.2f}\n"
-                compare_lines.append(entry)
-            compare_summary = "\n".join(compare_lines)
-            st.code(compare_summary, language="text")
+            report_lines = []
+            report_lines.append("تقرير التحليل:")
+            report_lines.append("متوسط الانحراف: {:.2f}".format(avg_deviation))
+            report_lines.append("الحد الحرج: {:.2f}".format(threshold))
+            report_lines.append("النتيجة: {}".format(status))
+            report_lines.append("\n---\nتفاصيل الحساسات المنحرفة:")
 
-            # حفظ التقرير النهائي بدون أخطاء تنسيقية
-            report_lines = [
-                "تقرير التحليل:",
-                f"متوسط الانحراف: {avg_deviation:.2f}",
-                f"الحد الحرج: {threshold}",
-                f"النتيجة: {status}",
-                "\n---\nتفاصيل الحساسات المنحرفة:",
-                compare_summary
-            ]
+            for i, row in outliers_df.iterrows():
+                report_lines.append("- قراءة رقم {}:".format(i+1))
+                for col in model_features:
+                    report_lines.append("    • {}: {}".format(col, row[col]))
+                report_lines.append("    ⚠️ درجة الانحراف: {:.2f}".format(row['deviation_score']))
+                report_lines.append("")
+
             report_text = "\n".join(report_lines)
-            b64 = base64.b64encode(report_text.encode()).decode()
-            href = f'<a href="data:file/txt;base64,{b64}" download="fault_report.txt">⬇️ تحميل التقرير على الموبايل</a>'
-            st.markdown("### 📥 تحميل التقرير النهائي")
-            st.markdown(href, unsafe_allow_html=True)
+
+            # حفظ الملف في مجلد data
+            os.makedirs("data", exist_ok=True)
+            report_path = "data/fault_report.txt"
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write(report_text)
+
+            with open(report_path, "r", encoding="utf-8") as file:
+                st.markdown("### 📥 تحميل التقرير النهائي")
+                st.download_button(
+                    label="⬇️ اضغط هنا لحفظ التقرير على الموبايل",
+                    data=file.read(),
+                    file_name="fault_report.txt",
+                    mime="text/plain"
+                )
 
     except Exception as e:
         st.error("❌ حدث خطأ أثناء التحليل:")
