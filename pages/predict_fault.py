@@ -31,7 +31,7 @@ if st.button("🚀 تحليل البيانات وتوقع العطل"): if model
             deviation_scores = 1 - prediction
             avg_deviation = np.mean(deviation_scores)
 
-            # تقرير
+            # تقرير عام
             st.markdown(f"### 🔍 متوسط درجة الانحراف: **{avg_deviation:.2f}** من 1.0")
             if avg_deviation > threshold:
                 status = "⚠️ يوجد انحراف واضح عن القيم الطبيعية"
@@ -39,7 +39,7 @@ if st.button("🚀 تحليل البيانات وتوقع العطل"): if model
                 status = "✅ القيم ضمن النطاق الطبيعي"
             st.markdown(f"### النتيجة: {status}")
 
-            # رسم بياني
+            # رسم بياني للانحراف
             st.subheader("📉 رسم بياني لانحراف قراءات الحساسات")
             fig, ax = plt.subplots(figsize=(12, 5))
             sns.lineplot(data=deviation_scores, ax=ax, marker="o", color="#FF5733")
@@ -59,14 +59,18 @@ if st.button("🚀 تحليل البيانات وتوقع العطل"): if model
 
             # تقرير المقارنة الفردية
             st.subheader("🧾 تقرير المقارنة الفردية")
-            compare_summary = ""
+            compare_lines = []
             for i, row in outliers_df.iterrows():
-                compare_summary += f"- قراءة رقم {i+1}:
+                entry = f"- قراءة رقم {i+1}:\n"
+                for col in model_features:
+                    entry += f"    • {col}: {row[col]}\n"
+                entry += f"    ⚠️ درجة الانحراف: {row['deviation_score']:.2f}\n"
+                compare_lines.append(entry)
+            compare_summary = "\n".join(compare_lines)
+            st.code(compare_summary, language="text")
 
-" for col in model_features: compare_summary += f"    • {col}: {row[col]} " compare_summary += f"    ⚠️ درجة الانحراف: {row['deviation_score']:.2f}\n\n" st.code(compare_summary, language="text")
-
-# تقرير نصي وتحميله
-            report_text = f"تقرير التحليل:\nمتوسط الانحراف: {avg_deviation:.2f}\nالحد الحرج: {threshold}\nالنتيجة: {status}\n\n---\nتفاصيل الحساسات المنحرفة:\n" + compare_summary
+            # تقرير نصي وتحميله
+            report_text = f"تقرير التحليل:\nمتوسط الانحراف: {avg_deviation:.2f}\nالحد الحرج: {threshold}\nالنتيجة: {status}\n\n---\nتفاصيل الحساسات المنحرفة:\n{compare_summary}"
             b64 = base64.b64encode(report_text.encode()).decode()
             href = f'<a href="data:file/txt;base64,{b64}" download="fault_report.txt">⬇️ تحميل التقرير على الموبايل</a>'
             st.markdown("### 📥 تحميل التقرير النهائي")
